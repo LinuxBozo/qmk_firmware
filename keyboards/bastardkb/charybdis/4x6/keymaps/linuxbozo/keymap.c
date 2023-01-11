@@ -46,6 +46,15 @@ static uint16_t auto_pointer_layer_timer = 0;
 #define RAISE MO(LAYER_RAISE)
 #define PT_Z LT(LAYER_POINTER, KC_Z)
 #define PT_SLSH LT(LAYER_POINTER, KC_SLSH)
+#define LCURLY LSFT(KC_LBRC)
+#define RCURLY LSFT(KC_RBRC)
+
+#ifndef POINTING_DEVICE_ENABLE
+#    define DRGSCRL KC_NO
+#    define DPI_MOD KC_NO
+#    define S_D_MOD KC_NO
+#    define SNIPING KC_NO
+#endif // !POINTING_DEVICE_ENABLE
 
 // clang-format off
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -85,9 +94,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   // ├──────────────────────────────────────────────────────┤ ├──────────────────────────────────────────────────────┤
        KC_MNXT, XXXXXXX,   KC_UP, XXXXXXX, XXXXXXX, XXXXXXX,    XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, KC_VOLU,
   // ├──────────────────────────────────────────────────────┤ ├──────────────────────────────────────────────────────┤
-       KC_MPLY, KC_LEFT, KC_DOWN, KC_RGHT, XXXXXXX, XXXXXXX,    KC_LEFT,   KC_UP, KC_DOWN, KC_RGHT, XXXXXXX, KC_MUTE,
+       KC_MPLY, KC_LEFT, KC_DOWN, KC_RGHT, XXXXXXX, XXXXXXX,    KC_LEFT,   KC_DOWN, KC_UP, KC_RGHT, XXXXXXX, KC_MUTE,
   // ├──────────────────────────────────────────────────────┤ ├──────────────────────────────────────────────────────┤
-       KC_MPRV, KC_HOME, KC_PGUP, KC_PGDN,  KC_END, XXXXXXX,    XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, KC_VOLD,
+       KC_MPRV, KC_HOME, KC_PGUP, KC_PGDN,  KC_END, XXXXXXX,    XXXXXXX, LCURLY, KC_LBRC, KC_RBRC, RCURLY, KC_VOLD,
   // ╰──────────────────────────────────────────────────────┤ ├──────────────────────────────────────────────────────╯
                                   _______, _______, XXXXXXX,    _______, XXXXXXX,
                                            _______, _______,    XXXXXXX
@@ -96,9 +105,9 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
   [LAYER_POINTER] = LAYOUT_charybdis_4x6(
   // ╭──────────────────────────────────────────────────────╮ ╭──────────────────────────────────────────────────────╮
-       RESET, EEP_RST, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,      XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
+       XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,      XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
   // ├──────────────────────────────────────────────────────┤ ├──────────────────────────────────────────────────────┤
-       XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, DPI_MOD, S_D_MOD,    S_D_MOD, DPI_MOD, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
+       XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX, DPI_RMOD, S_D_RMOD,    S_D_MOD, DPI_MOD, XXXXXXX, XXXXXXX, XXXXXXX, XXXXXXX,
   // ├──────────────────────────────────────────────────────┤ ├──────────────────────────────────────────────────────┤
        XXXXXXX, KC_LGUI, KC_LALT, KC_LCTL, KC_LSFT, XXXXXXX,    XXXXXXX, KC_RSFT, KC_RCTL, KC_RALT, KC_RGUI, XXXXXXX,
   // ├──────────────────────────────────────────────────────┤ ├──────────────────────────────────────────────────────┤
@@ -120,33 +129,31 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
 #        ifdef RGB_MATRIX_ENABLE
             rgb_matrix_mode_noeeprom(RGB_MATRIX_NONE);
             rgb_matrix_sethsv_noeeprom(HSV_GREEN);
-#        endif  // RGB_MATRIX_ENABLE
+#        endif // RGB_MATRIX_ENABLE
         }
         auto_pointer_layer_timer = timer_read();
     }
     return mouse_report;
 }
 
-void matrix_scan_kb(void) {
+void matrix_scan_user(void) {
     if (auto_pointer_layer_timer != 0 && TIMER_DIFF_16(timer_read(), auto_pointer_layer_timer) >= CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_TIMEOUT_MS) {
         auto_pointer_layer_timer = 0;
         layer_off(LAYER_POINTER);
 #        ifdef RGB_MATRIX_ENABLE
-        rgb_matrix_mode_noeeprom(RGB_MATRIX_STARTUP_MODE);
-#        endif  // RGB_MATRIX_ENABLE
+        rgb_matrix_mode_noeeprom(RGB_MATRIX_DEFAULT_MODE);
+#        endif // RGB_MATRIX_ENABLE
     }
-    matrix_scan_user();
 }
-#    endif  // CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_ENABLE
+#    endif // CHARYBDIS_AUTO_POINTER_LAYER_TRIGGER_ENABLE
 
 #    ifdef CHARYBDIS_AUTO_SNIPING_ON_LAYER
-layer_state_t layer_state_set_kb(layer_state_t state) {
-    state = layer_state_set_user(state);
+layer_state_t layer_state_set_user(layer_state_t state) {
     charybdis_set_pointer_sniping_enabled(layer_state_cmp(state, CHARYBDIS_AUTO_SNIPING_ON_LAYER));
     return state;
 }
-#    endif  // CHARYBDIS_AUTO_SNIPING_ON_LAYER
-#endif      // POINTING_DEVICE_ENABLE
+#    endif // CHARYBDIS_AUTO_SNIPING_ON_LAYER
+#endif     // POINTING_DEVICE_ENABLE
 
 #ifdef RGB_MATRIX_ENABLE
 // Forward-declare this helper function since it is defined in rgb_matrix.c.
@@ -157,10 +164,10 @@ void shutdown_user(void) {
 #ifdef RGBLIGHT_ENABLE
     rgblight_enable_noeeprom();
     rgblight_mode_noeeprom(1);
-    rgblight_setrgb_red();
-#endif  // RGBLIGHT_ENABLE
+    rgblight_setrgb(RGB_RED);
+#endif // RGBLIGHT_ENABLE
 #ifdef RGB_MATRIX_ENABLE
     rgb_matrix_set_color_all(RGB_RED);
     rgb_matrix_update_pwm_buffers();
-#endif  // RGB_MATRIX_ENABLE
+#endif // RGB_MATRIX_ENABLE
 }
